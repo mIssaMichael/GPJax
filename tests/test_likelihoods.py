@@ -34,6 +34,7 @@ from gpjax.likelihoods import (
     Gaussian,
     Poisson,
     inv_probit,
+    Exponential,
 )
 
 # Enable Float64 for more stable matrix inversions.
@@ -111,3 +112,22 @@ def test_poisson_likelihood(n: int):
     # Check predictive mean and variance.
     rate = jnp.exp(latent_mean)
     assert (pred_dist.mean() == rate).all()
+
+@pytest.mark.parametrize("n", [1, 2, 10])
+def test_exponential_likelihood(n: int):
+    x = jnp.linspace(-3.0, 3.0).reshape(-1, 1)
+    likelihood = Exponential(num_datapoints=n)
+
+    assert isinstance(likelihood.link_function, Callable)
+    assert isinstance(likelihood.link_function(x), tfd.Distribution)
+
+    # Construct latent function distribution.
+    latent_dist, latent_mean, latent_cov = _compute_latent_dist(n)
+    pred_dist = likelihood(latent_dist)
+    assert isinstance(pred_dist, tfd.Exponential)
+
+    # Check predictive rate
+    rate = jnp.exp(latent_mean)
+    assert (pred_dist.rate() == rate).all()
+
+

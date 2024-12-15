@@ -264,6 +264,42 @@ def inv_probit(x: Float[Array, " *N"]) -> Float[Array, " *N"]:
     return 0.5 * (1.0 + jsp.special.erf(x / jnp.sqrt(2.0))) * (1 - 2 * jitter) + jitter
 
 
+class Exponential(AbstractLikelihood):
+    r"""
+    Exponential likelihood object.
+    
+    This likelihood assumes the observations follow an Exponential distribution
+    with a rate parameter given by the inverse link function applied to the latent
+    function values.
+    """
+
+    def link_function(self, f: Float[Array, "..."]) -> tfd.Distribution:
+        r"""The link function of the Exponential likelihood.
+
+        Args:
+            f (Float[Array, "..."]): Function values.
+
+        Returns:
+            tfd.Distribution: The likelihood function.
+        """
+
+        return tfd.Exponential(rate=jnp.exp(f))
+    
+    def predict(self, dist: tfd.Distribution) -> tfd.Distribution:
+        r"""Evaluate the pointwise predictive distribution.
+
+        Args:
+            dist (tfd.Distribution): The Gaussian process posterior, evaluated
+                at a finite set of test points.
+
+        Returns:
+            tfd.Distribution: The pointwise predictive distribution.
+        """
+
+        return self.link_function(dist.mean())
+
+
+
 NonGaussian = tp.Union[Poisson, Bernoulli]
 
 __all__ = [
